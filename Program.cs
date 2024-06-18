@@ -7,17 +7,23 @@ class Program
     static async Task Main(string[] args)
     {
         Collector collector = new Collector("bluearchive");
+        Crawler crawler = new Crawler();
 
         HttpClient client = new HttpClient();
 
-        var data = await collector.Run(client, 500);
+        var data = await collector.Run(client, 3);
+        var res = await crawler.GetImageAsync(data);
 
-        var f = File.CreateText("test/test.json");
-        foreach (var i in data) {
-            f.WriteLine(i);
+        int j = 0;
+
+        foreach (var i in res) {
+            var f = File.Create($"test/{j}.png");
+            f.Write(i);
+            f.Close();
+            j++;
         }
 
-        f.Close();
+        
              
     }
 }

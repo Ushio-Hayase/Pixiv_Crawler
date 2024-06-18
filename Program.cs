@@ -6,13 +6,18 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        Crawler crawler = new Crawler();
+        Collector collector = new Collector("bluearchive");
 
-        var account = new Account { login_id="1", password="1"};
+        HttpClient client = new HttpClient();
 
-        var data = await crawler.GetLoginCookie(account);
+        var data = await collector.Run(client, 500);
 
-        Console.WriteLine(data.message);
+        var f = File.CreateText("test/test.json");
+        foreach (var i in data) {
+            f.WriteLine(i);
+        }
+
+        f.Close();
              
     }
 }

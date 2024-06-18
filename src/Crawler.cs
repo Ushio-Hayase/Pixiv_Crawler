@@ -33,7 +33,7 @@ class Crawler {
         foreach (var image in images) {
             SetImageId(image.Item1);
             contents.Add(await client.GetByteArrayAsync(image.Item2));
-            Thread.Sleep(10);
+            Thread.Sleep(3);
         }
 
     

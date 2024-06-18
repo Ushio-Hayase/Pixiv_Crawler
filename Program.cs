@@ -11,7 +11,7 @@ class Program
 
         HttpClient client = new HttpClient();
 
-        var data = await collector.Run(client, 3);
+        var data = await collector.Run(client, 10);
         var res = await crawler.GetImageAsync(data);
 
         int j = 0;

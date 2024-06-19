@@ -6,12 +6,10 @@ class Program
 {
     static async Task Main(string[] args)
     {
-        Collector collector = new Collector("bluearchive");
-        Crawler crawler = new Crawler();
+        Collector collector = new("Aru");
+        Crawler crawler = new();
 
-        HttpClient client = new HttpClient();
-
-        var data = await collector.Run(client, 10);
+        var data = await collector.Run(10, IllustrationsUrlQuery.Type.illust_and_ugoira, IllustrationsUrlQuery.Order.date, IllustrationsUrlQuery.Mode.safe);
         var res = await crawler.GetImageAsync(data);
 
         int j = 0;

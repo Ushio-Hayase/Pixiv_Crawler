@@ -10,7 +10,7 @@ class Collector {
 
     public Collector(string tag) {
         this.tag = tag;
-        SEARCH_URL = KEYWORD_URL + tag;
+        SEARCH_URL = KEYWORD_URL + tag + $"?word={tag}";
         _client = new HttpClient {
             BaseAddress = new Uri(SEARCH_URL)
         };
@@ -26,11 +26,11 @@ class Collector {
 
 
 
-    public async Task<List<Tuple<string, string>>> Run(int page, IllustrationsUrlQuery.Type type,
+    public async Task<List<(string, string)>> Run(int page, IllustrationsUrlQuery.Type type,
      IllustrationsUrlQuery.Order order, IllustrationsUrlQuery.Mode mode) {
         Console.WriteLine("===Collecting Start===");
 
-        List<Tuple<string, string>> image_ids = new List<Tuple<string, string>> (); // image list 
+        List<(string, string)> image_ids = []; // image list 
         List<Task<string>> requests = new List<Task<string>>(page*70); // request list
 
         for(int i = 1; i <= page; ++i) {
@@ -40,6 +40,7 @@ class Collector {
             AddSearchUrlQuery(query.TypeQuery);
             AddSearchUrlQuery(query.OrderQuery);
             AddSearchUrlQuery(query.TypeQuery);
+            AddSearchUrlQuery(("s_mode", "s_tag"));
             AddSearchUrlQuery(("p", i.ToString()));
 
             requests.Add(_client.GetStringAsync(SEARCH_URL)); // send to request image list
@@ -62,7 +63,7 @@ class Collector {
                 if (valid.Contains("id") && valid.Contains("url")) {
                     string id = content.GetProperty("id").GetString()!;
                     string url = content.GetProperty("url").GetString()!;
-                    image_ids.Add(Tuple.Create(id, url));
+                    image_ids.Add((id, url));
                 }
             }
 

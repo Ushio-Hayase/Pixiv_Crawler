@@ -16,6 +16,7 @@ class Crawler {
         client = new HttpClient
         {
             BaseAddress = new Uri(PIXIV_URL),
+            Timeout = TimeSpan.FromMinutes(10)
         };
     }
 
@@ -25,9 +26,18 @@ class Crawler {
         client.DefaultRequestHeaders.Add("Referer", ARTWORK_URL + id);
     }
 
+    private async Task<Task<byte[]>> DownloadImage((string, string) id_url) {
+        SetImageId(id_url.Item1);
+            
+        var url = await GetOriginalImage(id_url.Item1);
+
+        return client.GetByteArrayAsync(url);
+    }
+
+    /* get original image url */
     async Task<string> GetOriginalImage(string id) {
-        string response = await client.GetStringAsync(BASE_IMAGE_URL.Replace("ARTWORK_ID", id));
-        JsonElement json = JsonDocument.Parse(response).RootElement;
+        var response = client.GetStringAsync(BASE_IMAGE_URL.Replace("ARTWORK_ID", id));
+        JsonElement json = JsonDocument.Parse(await response).RootElement;
 
         if(json.GetProperty("error").GetBoolean()) 
             throw new HttpRequestException("failed to get original message");
@@ -45,28 +55,35 @@ class Crawler {
     }
 
     /* HTML raw 데이터를 가져옵니다 */
-    public async Task<List<byte[]>> GetImageAsync(List<Tuple<string, string>> images) {
-        Console.WriteLine("===Start DownLoading===");
+    public async Task<List<byte[]>> GetImageAsync(List<(string, string)> images) {
+        var StartTime = DateTime.Now;
+        Console.WriteLine($"===Start DownLoading===");
 
-        List<Task<byte[]>> contents = new(images.Count);
-        List<byte[]> results = new(images.Count);
+        List<Task<Task<byte[]>>> thread = [];
+        List<byte[]> contents = new(images.Count);
 
         foreach (var image in images) {
-            SetImageId(image.Item1);
-            
-            var url = await GetOriginalImage(image.Item1);
-
-            contents.Add(client.GetByteArrayAsync(url));
-            Thread.Sleep(1);
+            thread.Add(DownloadImage(image));
         }
 
-        foreach (var content in contents) {
-            content.Wait();
-            results.Add(content.Result);
+        int i = 0;
+
+        while(thread.Count != 0) {
+            try {
+                if(thread[i].IsCompleted) {
+                    contents.Add(await await thread[i]);
+                    thread.Remove(thread[i]);
+                }
+            } catch (Exception err) {
+                Console.WriteLine($"Exception : {err.Message}");
+                continue;
+            }
+            i = thread.Count >= i ? 0 : i+1;
         }
 
         Console.WriteLine("===Success DownLoading===");
+        Console.WriteLine($"===Downloading Time : {DateTime.Now-StartTime}===");
 
-        return results;
+        return contents;
     }
 }

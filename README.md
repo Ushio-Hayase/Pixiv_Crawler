@@ -8,8 +8,9 @@ in production
 milestone
 
 - [X] HTML raw data 가져오기
-- [ ] adding tag
-- [ ] classification
+- [X] adding tag
+- [X] classification
 - [X] image data list load
 - [X] get image data 
 - [X] img2file
+- [ ] file name to title

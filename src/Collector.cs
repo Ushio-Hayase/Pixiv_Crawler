@@ -1,5 +1,4 @@
 using System.Text.Json;
-using System.Text.Json.Nodes;
 
 class Collector {
     private const string KEYWORD_URL = "https://www.pixiv.net/ajax/search/illustrations/"; // base url

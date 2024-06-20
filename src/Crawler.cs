@@ -1,5 +1,3 @@
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
 using System.Text.Json;
 
 namespace pixiv_crawler;
@@ -26,12 +24,12 @@ class Crawler {
         client.DefaultRequestHeaders.Add("Referer", ARTWORK_URL + id);
     }
 
-    private async Task<Task<byte[]>> DownloadImage((string, string) id_url) {
+    private async Task<(string, Task<byte[]>)> DownloadImage((string, string) id_url) {
         SetImageId(id_url.Item1);
             
         var url = await GetOriginalImage(id_url.Item1);
 
-        return client.GetByteArrayAsync(url);
+        return (id_url.Item1, client.GetByteArrayAsync(url));
     }
 
     /* get original image url */
@@ -55,12 +53,12 @@ class Crawler {
     }
 
     /* HTML raw 데이터를 가져옵니다 */
-    public async Task<List<byte[]>> GetImageAsync(List<(string, string)> images) {
+    public async Task<List<(string, byte[])>> GetImageAsync(List<(string, string)> images) {
         var StartTime = DateTime.Now;
         Console.WriteLine($"===Start DownLoading===");
 
-        List<Task<Task<byte[]>>> thread = [];
-        List<byte[]> contents = new(images.Count);
+        List<Task<(string, Task<byte[]>)>> thread = [];
+        List<(string, byte[])> contents = new(images.Count);
 
         foreach (var image in images) {
             thread.Add(DownloadImage(image));
@@ -71,7 +69,7 @@ class Crawler {
         while(thread.Count != 0) {
             try {
                 if(thread[i].IsCompleted) {
-                    contents.Add(await await thread[i]);
+                    contents.Add((thread[i].Result.Item1, thread[i].Result.Item2.Result));
                     thread.Remove(thread[i]);
                 }
             } catch (Exception err) {

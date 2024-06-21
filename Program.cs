@@ -23,6 +23,9 @@ class Program
 
         [Option("output", Default ="./pixiv/" ,HelpText ="storage to store")]
         public string Path {get; set;}
+
+        [Option("filename", Default = "id", HelpText = "filename options can have \"id\" or \"title\"")]
+        public string Name {get;set;}
     }
 
     static void Main(string[] args)
@@ -34,12 +37,10 @@ class Program
     }
 
     static void Parsed(Options options) {
-        Collector collector = new(options.Search);
-        Crawler crawler = new();
-
         IllustrationsUrlQuery.Type type;
         IllustrationsUrlQuery.Order order;
         IllustrationsUrlQuery.Mode mode;
+        Collector.Name name;
 
         // Parse Type option
         switch (options.Type) {
@@ -95,6 +96,15 @@ class Program
             Directory.CreateDirectory(options.Path);
         }
 
+        switch (options.Name) {
+            case "id" : name = Collector.Name.id; break;
+            case "title" : name = Collector.Name.title; break;
+            default: Console.Error.WriteLine("unknown option of file name type");return;
+        }
+
+        Collector collector = new(options.Search, name);
+        Crawler crawler = new();
+
         List<(string, string)> imglist = collector.Run(options.Pages, type, order, mode).Result;
 
         List<(string,byte[])> imgs = crawler.GetImageAsync(imglist).Result;
@@ -108,6 +118,6 @@ class Program
     }
 
     static void ParseError(IEnumerable<Error> errs) {
-
+        Console.Error.WriteLine(errs);
     }
 }

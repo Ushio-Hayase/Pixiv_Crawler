@@ -24,16 +24,16 @@ class Crawler {
         client.DefaultRequestHeaders.Add("Referer", ARTWORK_URL + id);
     }
 
-    private async Task<(string, Task<byte[]>)> DownloadImage((string, string) id_url) {
+    private async Task<(string, Task<byte[]>)> DownloadImage((string, string) id_url) { // (name, url) id_url
         SetImageId(id_url.Item1);
             
-        var url = await GetOriginalImage(id_url.Item1);
+        var url = await GetOriginalImageUrl(id_url.Item1);
 
         return (id_url.Item1, client.GetByteArrayAsync(url));
     }
 
     /* get original image url */
-    async Task<string> GetOriginalImage(string id) {
+    async Task<string> GetOriginalImageUrl(string id) {
         var response = client.GetStringAsync(BASE_IMAGE_URL.Replace("ARTWORK_ID", id));
         JsonElement json = JsonDocument.Parse(await response).RootElement;
 
@@ -52,8 +52,8 @@ class Crawler {
         return result[0];
     }
 
-    /* HTML raw 데이터를 가져옵니다 */
-    public async Task<List<(string, byte[])>> GetImageAsync(List<(string, string)> images) {
+    
+    public async Task<List<(string, byte[])>> GetImageAsync(List<(string, string)> images) { // List<Name, Url>
         var StartTime = DateTime.Now;
         Console.WriteLine($"===Start DownLoading===");
 

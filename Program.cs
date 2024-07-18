@@ -1,5 +1,8 @@
 ﻿using System.Text.Json;
 using CommandLine;
+using static Collector;
+using static IllustrationsUrlQuery;
+using static pixiv_crawler.Program;
 
 namespace pixiv_crawler;
 
@@ -24,8 +27,11 @@ class Program
         [Option("output", Default ="./pixiv/" ,HelpText ="storage to store")]
         public string Path {get; set;}
 
-        [Option("filename", Default = "id", HelpText = "filename options can have \"id\" or \"title\"")]
+        [Option("filename", Default = "id", HelpText = "filename options must be \"id\" or \"title\"")]
         public string Name {get;set;}
+
+        [Option("kfile", Default ="", HelpText = "keyword file path to search for")]
+        public string KeyWordFile { get; set;}
     }
 
     static void Main(string[] args)
@@ -102,19 +108,33 @@ class Program
             default: Console.Error.WriteLine("unknown option of file name type");return;
         }
 
-        Collector collector = new(options.Search, name);
+        switch (options.KeyWordFile)
+        {
+            case "": Run(mode, order, type, options.Search, options.Pages, options.Path,name);  break;
+            default:
+                foreach (var i in File.ReadLines(options.KeyWordFile))
+                {
+                    Run(mode, order, type, i, options.Pages, options.Path + "/" + i, name); 
+                }
+                break;
+        }
+    }
+
+    static void Run(IllustrationsUrlQuery.Mode mode, IllustrationsUrlQuery.Order order, 
+        IllustrationsUrlQuery.Type type ,string search_keyword, 
+        int page, string path, Collector.Name name)
+    {
+        Collector collector = new(search_keyword, name);
         Crawler crawler = new();
+        List<(string, string)> imglist = collector.Run(page, type, order, mode).Result;
+        List<(string, byte[])> imgs = crawler.GetImageAsync(imglist).Result;
 
-        List<(string, string)> imglist = collector.Run(options.Pages, type, order, mode).Result;
-
-        List<(string,byte[])> imgs = crawler.GetImageAsync(imglist).Result;
-
-        foreach (var img in imgs) {
-            var file = File.Create(Path.Join([options.Path, img.Item1, ".png"]));
+        foreach (var img in imgs)
+        {
+            var file = File.Create(Path.Join([path, img.Item1, ".png"]));
             file.Write(img.Item2);
             file.Close();
         }
-
     }
 
     static void ParseError(IEnumerable<Error> errs) {

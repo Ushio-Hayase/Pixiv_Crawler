@@ -1,12 +1,13 @@
+using System.Net;
 using System.Text.Json;
 
 namespace pixiv_crawler;
 
 
 class Crawler {
-    private const string PIXIV_URL = "https://www.pixiv.net/"; // 픽시브 기본 URL
-    private const string ARTWORK_URL = "https://www.pixiv.net/artworks/"; // 이미지 기본 url
-    private const string BASE_IMAGE_URL = "https://www.pixiv.net/ajax/illust/ARTWORK_ID/pages"; // Image ajax url
+    private const string PIXIV_URL = "http://www.pixiv.net/"; // 픽시브 기본 URL
+    private const string ARTWORK_URL = "http://www.pixiv.net/artworks/"; // 이미지 기본 url
+    private const string BASE_IMAGE_URL = "http://www.pixiv.net/ajax/illust/ARTWORK_ID/pages"; // Image ajax url
 
     private HttpClient client;
 
@@ -18,7 +19,6 @@ class Crawler {
         };
     }
 
-    // set Cookie
     void SetImageId(string id) {
         client.DefaultRequestHeaders.Remove("Referer");
         client.DefaultRequestHeaders.Add("Referer", ARTWORK_URL + id);
@@ -69,14 +69,14 @@ class Crawler {
         while(thread.Count != 0) {
             try {
                 if(thread[i].IsCompleted) {
-                    contents.Add((thread[i].Result.Item1, thread[i].Result.Item2.Result));
+                    contents.Add(((await thread[i]).Item1, await (await thread[i]).Item2));
                     thread.Remove(thread[i]);
                 }
             } catch (Exception err) {
-                Console.WriteLine($"Exception : {err.Message}");
+                Console.WriteLine($"Exception : {err.ToString()}");
                 continue;
             }
-            i = thread.Count >= i ? 0 : i+1;
+            i = thread.Count - 1 > i ? i+1 : 0;
         }
 
         Console.WriteLine("===Success DownLoading===");

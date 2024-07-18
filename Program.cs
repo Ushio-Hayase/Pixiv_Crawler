@@ -129,9 +129,11 @@ class Program
         List<(string, string)> imglist = collector.Run(page, type, order, mode).Result;
         List<(string, byte[])> imgs = crawler.GetImageAsync(imglist).Result;
 
+        if (!Directory.Exists(path)) Directory.CreateDirectory(path);
+
         foreach (var img in imgs)
         {
-            var file = File.Create(Path.Join([path, img.Item1, ".png"]));
+            var file = File.Create(Path.Join([path, img.Item1 + ".png"]));
             file.Write(img.Item2);
             file.Close();
         }

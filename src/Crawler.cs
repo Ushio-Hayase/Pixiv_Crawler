@@ -1,4 +1,5 @@
 using System.Net;
+using System.Net.Http.Headers;
 using System.Text.Json;
 
 namespace pixiv_crawler;
@@ -8,6 +9,7 @@ class Crawler {
     private const string PIXIV_URL = "http://www.pixiv.net/"; // 픽시브 기본 URL
     private const string ARTWORK_URL = "http://www.pixiv.net/artworks/"; // 이미지 기본 url
     private const string BASE_IMAGE_URL = "http://www.pixiv.net/ajax/illust/ARTWORK_ID/pages"; // Image ajax url
+    private const string USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/104.0.0.0 Safari/537.36";
 
     private HttpClient client;
 
@@ -15,8 +17,9 @@ class Crawler {
         client = new HttpClient
         {
             BaseAddress = new Uri(PIXIV_URL),
-            Timeout = TimeSpan.FromMinutes(10)
+            Timeout = TimeSpan.FromMinutes(2)
         };
+        client.DefaultRequestHeaders.Add("user-agent", USER_AGENT);
     }
 
     void SetImageId(string id) {
@@ -24,12 +27,12 @@ class Crawler {
         client.DefaultRequestHeaders.Add("Referer", ARTWORK_URL + id);
     }
 
-    private async Task<(string, Task<byte[]>)> DownloadImage((string, string) id_url) { // (name, url) id_url
+    private (string, Task<byte[]>) DownloadImage((string, string) id_url) { // (name, url) id_url
         SetImageId(id_url.Item1);
             
-        var url = await GetOriginalImageUrl(id_url.Item1);
+        var url = GetOriginalImageUrl(id_url.Item1);
 
-        return (id_url.Item1, client.GetByteArrayAsync(url));
+        return (id_url.Item1, client.GetByteArrayAsync(url.Result));
     }
 
     /* get original image url */
@@ -57,8 +60,8 @@ class Crawler {
         var StartTime = DateTime.Now;
         Console.WriteLine($"===Start DownLoading===");
 
-        List<Task<(string, Task<byte[]>)>> thread = [];
-        List<(string, byte[])> contents = new(images.Count);
+        List<(string, Task<byte[]>)> thread = [];
+        List<(string, byte[])> contents  = new();
 
         foreach (var image in images) {
             thread.Add(DownloadImage(image));
@@ -68,13 +71,14 @@ class Crawler {
 
         while(thread.Count != 0) {
             try {
-                if(thread[i].IsCompleted) {
-                    contents.Add(((await thread[i]).Item1, await (await thread[i]).Item2));
+                if(thread[i].Item2.IsCompletedSuccessfully) {
+                    contents.Add((thread[i].Item1, await thread[i].Item2));
+                    thread[i].Item2.Dispose();
                     thread.Remove(thread[i]);
                 }
             } catch (Exception err) {
-                Console.WriteLine($"Exception : {err.ToString()}");
-                continue;
+                Console.WriteLine($"Exception : {err.Message}");
+                throw new Exception(err.ToString());
             }
             i = thread.Count - 1 > i ? i+1 : 0;
         }

@@ -133,7 +133,7 @@ class Program
 
         foreach (var img in imgs)
         {
-            var file = File.Create(Path.Join([path, img.Item1 + ".png"]));
+            var file = File.Create(Path.Join([path, img.Item1]));
             file.Write(img.Item2);
             file.Close();
         }

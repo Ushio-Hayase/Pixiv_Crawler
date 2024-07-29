@@ -30,9 +30,11 @@ class Crawler {
     private (string, Task<byte[]>) DownloadImage((string, string) id_url) { // (name, url) id_url
         SetImageId(id_url.Item1);
             
-        var url = GetOriginalImageUrl(id_url.Item1);
+        var url = GetOriginalImageUrl(id_url.Item1).Result;
 
-        return (id_url.Item1, client.GetByteArrayAsync(url.Result));
+        string extension = Path.GetExtension(url);
+
+        return (id_url.Item1 + extension, client.GetByteArrayAsync(url));
     }
 
     /* get original image url */
